@@ -2,93 +2,377 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SmartSit Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSit Tracker Dashboard</title>
     <style>
-        body { font-family: monospace; background: #121212; color: #00ffcc; padding: 20px; }
-        button { background: #333; color: #fff; border: 1px solid #00ffcc; padding: 10px; cursor: pointer; margin: 5px; }
-        button:hover { background: #00ffcc; color: #000; }
-        pre { background: #1e1e1e; padding: 15px; border: 1px solid #333; height: 300px; overflow-y: scroll; }
+        :root {
+            --bg-color: #0f111a;
+            --card-bg: #1a1d29;
+            --card-border: #2c3144;
+            --text-main: #ffffff;
+            --text-muted: #9ce7ff;
+            --accent-green: #07e065;
+            --accent-cyan: #07ffea;
+            --accent-orange: #fd2020;
+            --btn-bg: #252b3d;
+            --btn-hover: #343d56;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--accent-cyan);
+            margin-bottom: 4px;
+            font-size: 1.5rem;
+        }
+
+        .status-banner {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1.1rem;
+            color: var(--accent-cyan);
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 8px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--btn-bg);
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background-color: var(--btn-hover);
+            border-color: var(--accent-cyan);
+        }
+
+        button.primary {
+            background-color: #0d47a1;
+            border-color: #1976d2;
+        }
+        button.primary:hover {
+            background-color: #1565c0;
+        }
+
+        button.success {
+            background-color: #1b5e20;
+            border-color: #2e7d32;
+        }
+        button.success:hover {
+            background-color: #2e7d32;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            background-color: #0f111a;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            color: var(--text-main);
+            box-sizing: border-box;
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 80px;
+            font-family: monospace;
+        }
+
+        pre {
+            background-color: #0f111a;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            color: #a5d6a7;
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        .row > button {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
 
-    <h2>SmartSit Tracker Bluetooth Terminal</h2>
-    <button id="connectBtn">Connect to Tracker</button>
-    <button id="logsBtn" disabled>Get Logs</button>
-    <button id="cfgBtn" disabled>Get Config</button>
-    
-    <h3>Console Output:</h3>
-    <pre id="output"></pre>
+<div class="container">
+    <h2>SmartSit Dashboard</h2>
+    <div id="connectionStatus" class="status-banner">Status: Disconnected</div>
 
-    <script>
-        const NUS_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-        const NUS_RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Write to ESP32
-        const NUS_TX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Read from ESP32
+    <!-- Connection Card -->
+    <div class="card">
+        <button id="connectBtn" class="primary" onclick="toggleConnection()">Connect to Tracker</button>
+    </div>
 
-        let bluetoothDevice = null;
-        let rxCharacteristic = null;
-        let txCharacteristic = null;
+    <!-- Actions Card -->
+    <div class="card">
+        <h3>Actions</h3>
+        <button onclick="syncTime()">Sync Current Time</button>
+        <div class="row">
+            <button onclick="getLogs()">Get Logs</button>
+            <button onclick="getConfig()">Get Config</button>
+        </div>
+    </div>
 
-        const connectBtn = document.getElementById('connectBtn');
-        const logsBtn = document.getElementById('logsBtn');
-        const cfgBtn = document.getElementById('cfgBtn');
-        const output = document.getElementById('output');
+    <!-- Configuration Card -->
+    <div class="card">
+        <h3>Configuration Editor</h3>
+        <div class="input-group">
+            <label for="firstInterval">First Prompt Interval (mins)</label>
+            <input type="number" id="firstInterval" value="5">
+        </div>
+        <div class="row">
+            <div class="input-group" style="flex:1;">
+                <label for="minInterval">Min Interval (mins)</label>
+                <input type="number" id="minInterval" value="10">
+            </div>
+            <div class="input-group" style="flex:1;">
+                <label for="maxInterval">Max Interval (mins)</label>
+                <input type="number" id="maxInterval" value="30">
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="tasksList">Tasks (Comma separated)</label>
+            <textarea id="tasksList">WALK 2M, DRINK WATER, 15 SQUATS, STRETCH, EYE EXERCISE</textarea>
+        </div>
+        <button class="success" onclick="saveConfig()">Save Config to Tracker</button>
+    </div>
 
-        function log(text) {
-            output.textContent += text + "\n";
-            output.scrollTop = output.scrollHeight;
+    <!-- Data Log Viewer Card -->
+    <div class="card">
+        <h3>Device Output / Logs</h3>
+        <pre id="outputLog">No data received yet...</pre>
+    </div>
+</div>
+
+<script>
+    // UUIDs matching the ESP32 Nordic UART Service (NUS)
+    const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    const TX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+
+    let bluetoothDevice = null;
+    let gattServer = null;
+    let rxCharacteristic = null;
+    let txCharacteristic = null;
+    let incomingBuffer = "";
+
+    async function toggleConnection() {
+        if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+            disconnect();
+        } else {
+            connect();
         }
+    }
 
-        connectBtn.addEventListener('click', async () => {
-            try {
-                log("Requesting Bluetooth Device...");
-                bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: 'SmartSit-Tracker' }],
-                    optionalServices: [NUS_SERVICE_UUID]
-                });
+    async function connect() {
+        try {
+            updateStatus("Scanning for devices...");
+            
+            // acceptAllDevices: true ensures Android Chrome lists everything without filter blocks
+            bluetoothDevice = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: [SERVICE_UUID]
+            });
 
-                log("Connecting to GATT Server...");
-                const server = await bluetoothDevice.gatt.connect();
+            bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
 
-                log("Getting NUS Service...");
-                const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+            updateStatus("Connecting to GATT Server...");
+            gattServer = await bluetoothDevice.gatt.connect();
 
-                log("Getting Characteristics...");
-                rxCharacteristic = await service.getCharacteristic(NUS_RX_UUID);
-                txCharacteristic = await service.getCharacteristic(NUS_TX_UUID);
+            updateStatus("Getting NUS Service...");
+            const service = await gattServer.getPrimaryService(SERVICE_UUID);
 
-                await txCharacteristic.startNotifications();
-                txCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
-                    let decoder = new TextDecoder('utf-8');
-                    let value = decoder.decode(event.target.value);
-                    log("RX: " + value);
-                });
+            updateStatus("Getting Characteristics...");
+            rxCharacteristic = await service.getCharacteristic(RX_UUID);
+            txCharacteristic = await service.getCharacteristic(TX_UUID);
 
-                log("Connected successfully!");
-                connectBtn.disabled = true;
-                logsBtn.disabled = false;
-                cfgBtn.disabled = false;
+            await txCharacteristic.startNotifications();
+            txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
 
-            } catch (error) {
-                log("Connection failed: " + error);
+            updateStatus(`Connected to: ${bluetoothDevice.name || 'SmartSit-Tracker'}`);
+            document.getElementById("connectBtn").textContent = "Disconnect";
+            document.getElementById("connectBtn").style.backgroundColor = "#c62828";
+
+            // Automatically pull config on connection
+            getConfig();
+
+        } catch (error) {
+            console.error(error);
+            updateStatus("Connection failed: " + error.message);
+        }
+    }
+
+    function disconnect() {
+        if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+            bluetoothDevice.gatt.disconnect();
+        }
+        onDisconnected();
+    }
+
+    function onDisconnected() {
+        updateStatus("Status: Disconnected");
+        document.getElementById("connectBtn").textContent = "Connect to Tracker";
+        document.getElementById("connectBtn").style.backgroundColor = "";
+        bluetoothDevice = null;
+        gattServer = null;
+        rxCharacteristic = null;
+        txCharacteristic = null;
+    }
+
+    function updateStatus(text) {
+        document.getElementById("connectionStatus").textContent = text;
+    }
+
+    async function sendCommand(obj) {
+        if (!rxCharacteristic) {
+            alert("Not connected to the device!");
+            return;
+        }
+        try {
+            const jsonString = JSON.stringify(obj) + "\n";
+            const encoder = new TextEncoder();
+            // Write payload chunk by chunk if needed, or straight through if small
+            await rxCharacteristic.writeValue(encoder.encode(jsonString));
+        } catch (error) {
+            console.error("Write error:", error);
+            alert("Failed to send command.");
+        }
+    }
+
+    function handleNotifications(event) {
+        const value = event.target.value;
+        const decoder = new TextDecoder('utf-8');
+        const chunk = decoder.decode(value);
+        
+        incomingBuffer += chunk;
+        if (incomingBuffer.includes('\n')) {
+            let lines = incomingBuffer.split('\n');
+            incomingBuffer = lines.pop(); // keep remainder
+            
+            for (let line of lines) {
+                if (line.trim()) {
+                    try {
+                        const parsed = JSON.parse(line.trim());
+                        processIncomingPacket(parsed);
+                    } catch (e) {
+                        console.error("JSON parse error:", e, line);
+                    }
+                }
             }
-        });
-
-        async function sendCommand(obj) {
-            if (!rxCharacteristic) return;
-            let encoder = new TextEncoder();
-            let data = encoder.encode(JSON.stringify(obj) + "\n");
-            await rxCharacteristic.writeValue(data);
-            log("TX: " + JSON.stringify(obj));
         }
+    }
 
-        logsBtn.addEventListener('click', () => {
-            sendCommand({ cmd: "GET_LOGS" });
-        });
+    function processIncomingPacket(packet) {
+        const logBox = document.getElementById("outputLog");
+        logBox.textContent = JSON.stringify(packet, null, 2);
 
-        cfgBtn.addEventListener('click', () => {
-            sendCommand({ cmd: "GET_CFG" });
-        });
-    </script>
+        if (packet.type === "CFG" && packet.data) {
+            // Populate form fields
+            document.getElementById("firstInterval").value = packet.data.first_interval || 5;
+            document.getElementById("minInterval").value = packet.data.min_interval || 10;
+            document.getElementById("maxInterval").value = packet.data.max_interval || 30;
+            if (packet.data.tasks && Array.isArray(packet.data.tasks)) {
+                document.getElementById("tasksList").value = packet.data.tasks.join(", ");
+            }
+        } else if (packet.type === "ACK") {
+            alert("Command executed / Saved successfully!");
+        }
+    }
+
+    function syncTime() {
+        const now = new Date();
+        const timeArray = [
+            now.getFullYear(),
+            now.getMonth() + 1,
+            now.getDate(),
+            now.getHours(),
+            now.getMinutes(),
+            now.getSeconds()
+        ];
+        sendCommand({ cmd: "SYNC_TIME", time: timeArray });
+    }
+
+    function getLogs() {
+        sendCommand({ cmd: "GET_LOGS" });
+    }
+
+    function getConfig() {
+        sendCommand({ cmd: "GET_CFG" });
+    }
+
+    function saveConfig() {
+        const tasksRaw = document.getElementById("tasksList").value;
+        const tasksArray = tasksRaw.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
+        const cfgData = {
+            tasks: tasksArray,
+            first_interval: parseInt(document.getElementById("firstInterval").value),
+            min_interval: parseInt(document.getElementById("minInterval").value),
+            max_interval: parseInt(document.getElementById("maxInterval").value)
+        };
+
+        sendCommand({ cmd: "SET_CFG", data: cfgData });
+    }
+</script>
+
 </body>
 </html>
