@@ -3,158 +3,389 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartSit Web Dashboard</title>
+    <title>SmartSit Dashboard</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; background-color: #f4f4f9; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        button { background-color: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; margin: 5px; }
-        button:hover { background-color: #0056b3; }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        .log-box { background: #1e1e1e; color: #00ff00; font-family: monospace; padding: 15px; border-radius: 5px; height: 300px; overflow-y: auto; margin-top: 20px; }
-        .status { margin-bottom: 20px; font-weight: bold; }
-        .connected { color: green; }
-        .disconnected { color: red; }
+        :root {
+            --bg-color: #0d0f12;
+            --card-bg: rgba(255, 255, 255, 0.04);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.3);
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Glass Cards */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+
+        .dot.connected { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+        /* Buttons */
+        .btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: transparent;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #2563eb;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        /* Stats & Logs */
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .logs-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 240px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .logs-list::-webkit-scrollbar { width: 4px; }
+        .logs-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .log-item {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            padding: 10px 14px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .log-info { display: flex; flex-direction: column; gap: 2px; }
+        .log-time { font-size: 11px; color: var(--text-muted); }
+        .log-type { font-weight: 600; }
+        
+        .tag {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        .tag.ACC { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+        .tag.IGN { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .tag.FOCUS { background: rgba(59, 130, 246, 0.15); color: var(--accent); }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 20px 0;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>SmartSit Web Dashboard</h2>
-    <div class="status" id="statusText">Status: <span class="disconnected">Disconnected</span></div>
-    
-    <button id="btnConnect">Connect to ESP32</button>
-    <button id="btnSyncTime" disabled>Sync Time</button>
-    <button id="btnGetConfig" disabled>Get Config</button>
-    <button id="btnGetLogs" disabled>Get Logs</button>
+<div class="app-container">
+    <!-- Header & Connection -->
+    <div class="card header">
+        <div>
+            <div class="title">SmartSit Tracker</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;" id="deviceSub">Not connected</div>
+        </div>
+        <div class="status-badge" id="statusBadge">
+            <div class="dot" id="statusDot"></div>
+            <span id="statusText">Offline</span>
+        </div>
+    </div>
 
-    <div class="log-box" id="output">Waiting for data...<br></div>
+    <button class="btn btn-primary" id="btnConnect">Connect Device</button>
+
+    <!-- Controls -->
+    <div class="card" style="opacity: 0.4; pointer-events: none;" id="controlsCard">
+        <div class="section-title">Device Synchronization</div>
+        <div class="action-grid">
+            <button class="btn" id="btnSyncTime">Sync Time</button>
+            <button class="btn" id="btnGetConfig">Fetch Config</button>
+        </div>
+        <button class="btn btn-primary" id="btnGetLogs" style="margin-top: 10px;">Fetch Activity Logs</button>
+    </div>
+
+    <!-- Logs & Data Feed -->
+    <div class="card" style="opacity: 0.4; pointer-events: none;" id="logsCard">
+        <div class="section-title">Activity Feed</div>
+        <div class="logs-list" id="logsContainer">
+            <div class="empty-state">No logs loaded yet. Click "Fetch Activity Logs".</div>
+        </div>
+    </div>
 </div>
 
 <script>
-    // UUIDs for the Nordic UART Service (NUS)
     const NUS_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-    const RX_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // Web -> ESP32
-    const TX_CHARACTERISTIC_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // ESP32 -> Web
+    const RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+    const TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
     let bleDevice = null;
-    let rxCharacteristic = null; // We write to this
-    let txCharacteristic = null; // We read from this
-    let receiveBuffer = ''; // Buffer to reassemble 20-byte chunks
+    let rxCharacteristic = null;
+    let txCharacteristic = null;
+    let receiveBuffer = '';
+    
+    // Command Queue to prevent overlapping/corrupted payload bytes
+    let commandQueue = [];
+    let isWriting = false;
 
-    const uiOutput = document.getElementById('output');
+    const btnConnect = document.getElementById('btnConnect');
+    const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
-    const btns = [document.getElementById('btnSyncTime'), document.getElementById('btnGetConfig'), document.getElementById('btnGetLogs')];
+    const deviceSub = document.getElementById('deviceSub');
+    const controlsCard = document.getElementById('controlsCard');
+    const logsCard = document.getElementById('logsCard');
+    const logsContainer = document.getElementById('logsContainer');
 
-    function logToScreen(text, isError = false) {
-        const span = document.createElement('span');
-        span.style.color = isError ? '#ff4444' : '#00ff00';
-        span.innerText = `> ${text}\n`;
-        uiOutput.appendChild(span);
-        uiOutput.scrollTop = uiOutput.scrollHeight;
-    }
-
-    document.getElementById('btnConnect').addEventListener('click', async () => {
+    btnConnect.addEventListener('click', async () => {
         try {
-            logToScreen("Requesting Bluetooth Device...");
+            statusText.innerText = "Connecting...";
             bleDevice = await navigator.bluetooth.requestDevice({
-                filters: [{ services: [NUS_SERVICE_UUID] }], // Filter by service UUID instead of name
+                filters: [{ services: [NUS_SERVICE_UUID] }],
                 optionalServices: [NUS_SERVICE_UUID]
             });
 
-            bleDevice.addEventListener('gattserverdisconnected', () => {
-                statusText.innerHTML = 'Status: <span class="disconnected">Disconnected</span>';
-                btns.forEach(b => b.disabled = true);
-                logToScreen("Device disconnected.", true);
-            });
+            bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
 
-            logToScreen(`Connecting to GATT Server...`);
             const server = await bleDevice.gatt.connect();
-
-            logToScreen("Locating NUS Service...");
             const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+            
+            rxCharacteristic = await service.getCharacteristic(RX_UUID);
+            txCharacteristic = await service.getCharacteristic(TX_UUID);
 
-            logToScreen("Locating Characteristics...");
-            rxCharacteristic = await service.getCharacteristic(RX_CHARACTERISTIC_UUID);
-            txCharacteristic = await service.getCharacteristic(TX_CHARACTERISTIC_UUID);
-
-            // IMPORTANT: Subscribe to notifications and add event listener
             await txCharacteristic.startNotifications();
             txCharacteristic.addEventListener('characteristicvaluechanged', handleIncomingData);
 
-            statusText.innerHTML = `Status: <span class="connected">Connected to ${bleDevice.name}</span>`;
-            btns.forEach(b => b.disabled = false);
-            logToScreen("Ready to send/receive!");
+            // Update UI to App Mode
+            statusDot.classList.add('connected');
+            statusText.innerText = "Connected";
+            deviceSub.innerText = bleDevice.name;
+            btnConnect.innerText = "Disconnect";
+            btnConnect.classList.add('btn-danger');
+            controlsCard.style.opacity = "1";
+            controlsCard.style.pointerEvents = "auto";
+            logsCard.style.opacity = "1";
+            logsCard.style.pointerEvents = "auto";
+
+            // Auto-sync time and fetch logs on initial connection
+            queueCommand({ cmd: "SYNC_TIME", time: getFormattedTime() });
+            queueCommand({ cmd: "GET_LOGS" });
 
         } catch (error) {
-            logToScreen("Connection failed: " + error, true);
+            console.error(error);
+            statusText.innerText = "Failed";
+            statusDot.classList.remove('connected');
         }
     });
 
-    // --- Glue the 20-byte chunks together ---
+    function onDisconnected() {
+        statusDot.classList.remove('connected');
+        statusText.innerText = "Offline";
+        deviceSub.innerText = "Not connected";
+        btnConnect.innerText = "Connect Device";
+        btnConnect.classList.remove('btn-danger');
+        controlsCard.style.opacity = "0.4";
+        controlsCard.style.pointerEvents = "none";
+        logsCard.style.opacity = "0.4";
+        logsCard.style.pointerEvents = "none";
+    }
+
+    function getFormattedTime() {
+        const now = new Date();
+        return [
+            now.getFullYear(), now.getMonth() + 1, now.getDate(),
+            now.getHours(), now.getMinutes(), now.getSeconds()
+        ];
+    }
+
+    // --- Safe Serialized Queue ---
+    function queueCommand(cmdObject) {
+        commandQueue.push(cmdObject);
+        processQueue();
+    }
+
+    async function processQueue() {
+        if (isWriting || commandQueue.length === 0 || !rxCharacteristic) return;
+        isWriting = true;
+        const cmdObject = commandQueue.shift();
+        try {
+            const jsonStr = JSON.stringify(cmdObject) + '\n';
+            const encoder = new TextEncoder();
+            await rxCharacteristic.writeValue(encoder.encode(jsonStr));
+            await new Promise(r => setTimeout(r, 120)); // Breathing room for ESP32 RX buffer
+        } catch (err) {
+            console.error("Write error:", err);
+        } finally {
+            isWriting = false;
+            processQueue();
+        }
+    }
+
+    // --- Chunk Assembly ---
     function handleIncomingData(event) {
         const decoder = new TextDecoder('utf-8');
-        const chunk = decoder.decode(event.target.value);
-        receiveBuffer += chunk;
+        receiveBuffer += decoder.decode(event.target.value);
 
-        // Process whenever we find a newline character
         while (receiveBuffer.includes('\n')) {
             const splitIndex = receiveBuffer.indexOf('\n');
             const completeLine = receiveBuffer.substring(0, splitIndex).trim();
-            receiveBuffer = receiveBuffer.substring(splitIndex + 1); // Keep the remainder
+            receiveBuffer = receiveBuffer.substring(splitIndex + 1);
 
             if (completeLine) {
                 try {
-                    const jsonData = JSON.parse(completeLine);
-                    logToScreen("RECEIVED: " + JSON.stringify(jsonData, null, 2));
-                    
-                    // You can add logic here based on the type of data
-                    if (jsonData.type === "CFG") {
-                        console.log("Config loaded:", jsonData.data);
-                    } else if (jsonData.type === "LOGS") {
-                        console.log("Logs loaded:", jsonData.data);
+                    const response = JSON.parse(completeLine);
+                    if (response.type === "LOGS") {
+                        renderLogs(response.data);
+                    } else if (response.type === "CFG") {
+                        console.log("Config received:", response.data);
+                        alert("Configuration loaded successfully!");
                     }
                 } catch (e) {
-                    logToScreen("Failed to parse JSON: " + completeLine, true);
+                    console.error("JSON parse error:", completeLine);
                 }
             }
         }
     }
 
-    // --- Send data with guaranteed newline delimiter ---
-    async function sendCommand(cmdObject) {
-        if (!rxCharacteristic) return;
-        
-        // Ensure every command ends with \n so the ESP32 knows the line is done
-        const jsonStr = JSON.stringify(cmdObject) + '\n';
-        const encoder = new TextEncoder();
-        const data = encoder.encode(jsonStr);
-
-        try {
-            await rxCharacteristic.writeValue(data);
-            logToScreen("SENT: " + JSON.stringify(cmdObject));
-        } catch (error) {
-            logToScreen("Failed to send: " + error, true);
+    // --- Render App View ---
+    function renderLogs(data) {
+        const logs = data.logs || [];
+        if (logs.length === 0) {
+            logsContainer.innerHTML = `<div class="empty-state">No recorded activity found.</div>`;
+            return;
         }
+
+        logsContainer.innerHTML = '';
+        // Show newest first
+        logs.reverse().forEach(log => {
+            const item = document.createElement('div');
+            item.className = 'log-item';
+            
+            let tagClass = log.out || log.type;
+            let label = log.task || log.type;
+            if (log.type === "FOCUS") label = `Focus Session (${log.duration ? Math.round(log.duration/60) : 0}m)`;
+
+            item.innerHTML = `
+                <div class="log-info">
+                    <span class="log-type">${label}</span>
+                    <span class="log-time">${log.ts}</span>
+                </div>
+                <span class="tag ${tagClass}">${tagClass}</span>
+            `;
+            logsContainer.appendChild(item);
+        });
     }
 
-    // --- Button Actions ---
+    // Button Listeners
     document.getElementById('btnSyncTime').addEventListener('click', () => {
-        const now = new Date();
-        sendCommand({
-            cmd: "SYNC_TIME",
-            time: [
-                now.getFullYear(), now.getMonth() + 1, now.getDate(),
-                now.getHours(), now.getMinutes(), now.getSeconds()
-            ]
-        });
+        queueCommand({ cmd: "SYNC_TIME", time: getFormattedTime() });
+        alert("Time synced with device!");
     });
 
     document.getElementById('btnGetConfig').addEventListener('click', () => {
-        sendCommand({ cmd: "GET_CFG" });
+        queueCommand({ cmd: "GET_CFG" });
     });
 
     document.getElementById('btnGetLogs').addEventListener('click', () => {
-        sendCommand({ cmd: "GET_LOGS" });
+        queueCommand({ cmd: "GET_LOGS" });
     });
 </script>
 
