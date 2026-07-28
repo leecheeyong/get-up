@@ -318,10 +318,10 @@
             logsCard.style.opacity = "1";
             logsCard.style.pointerEvents = "auto";
 
-            // Safely sequence initial sync (spaced out to avoid collision)
+            // Safely sequence initial sync
             queueCommand({ cmd: "SYNC_TIME", time: getFormattedTime() });
-            setTimeout(() => queueCommand({ cmd: "GET_CFG" }), 500);
-            setTimeout(() => queueCommand({ cmd: "GET_LOGS" }), 1000);
+            setTimeout(() => queueCommand({ cmd: "GET_CFG" }), 600);
+            setTimeout(() => queueCommand({ cmd: "GET_LOGS" }), 1200);
 
         } catch (error) {
             console.error(error);
@@ -339,7 +339,7 @@
         controlsCard.style.opacity = "0.4";
         controlsCard.style.pointerEvents = "none";
         configCard.style.opacity = "0.4";
-        configCard.style.pointerEvents = "none";
+        controlsCard.style.pointerEvents = "none";
         logsCard.style.opacity = "0.4";
         logsCard.style.pointerEvents = "none";
     }
@@ -352,7 +352,6 @@
         ];
     }
 
-    // --- Safe Serialized Queue with 400ms buffer ---
     function queueCommand(cmdObject) {
         commandQueue.push(cmdObject);
         processQueue();
@@ -366,7 +365,7 @@
             const jsonStr = JSON.stringify(cmdObject) + '\n';
             const encoder = new TextEncoder();
             await rxCharacteristic.writeValue(encoder.encode(jsonStr));
-            await new Promise(r => setTimeout(r, 400)); // Safe delay between payloads
+            await new Promise(r => setTimeout(r, 400));
         } catch (err) {
             console.error("Write error:", err);
         } finally {
@@ -375,44 +374,63 @@
         }
     }
 
-    // --- Chunk Assembly ---
+    // --- Ultra-Forgiving Universal Parser ---
     function handleIncomingData(event) {
         const decoder = new TextDecoder('utf-8');
-        receiveBuffer += decoder.decode(event.target.value);
+        const chunk = decoder.decode(event.target.value);
+        receiveBuffer += chunk;
 
-        while (receiveBuffer.includes('\n')) {
-            const splitIndex = receiveBuffer.indexOf('\n');
-            const completeLine = receiveBuffer.substring(0, splitIndex).trim();
-            receiveBuffer = receiveBuffer.substring(splitIndex + 1);
+        console.log("Raw BLE chunk:", chunk); // Check browser console (F12) to see raw packets
 
-            if (completeLine) {
-                try {
-                    const response = JSON.parse(completeLine);
-                    if (response.type === "LOGS") {
-                        renderLogs(response.data);
-                    } else if (response.type === "CFG") {
-                        renderConfig(response.data);
-                    } else if (response.type === "ACK") {
-                        console.log("Command acknowledged by device.");
-                    }
-                } catch (e) {
-                    console.error("JSON parse error:", completeLine);
+        // Process line-by-line if newline exists, or try parsing the whole buffer if it forms complete JSON
+        if (receiveBuffer.includes('\n')) {
+            const lines = receiveBuffer.split('\n');
+            receiveBuffer = lines.pop(); // Keep leftover fragment
+            for (let line of lines) {
+                if (line.trim()) tryParseAndRoute(line.trim());
+            }
+        } else {
+            // Fallback for ESP32 streams without newlines
+            const trimmed = receiveBuffer.trim();
+            if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+                if (tryParseAndRoute(trimmed)) {
+                    receiveBuffer = ''; // Clear buffer on success
                 }
             }
         }
     }
 
-    // --- Render UI Views ---
+    function tryParseAndRoute(jsonStr) {
+        try {
+            const res = JSON.parse(jsonStr);
+            console.log("Parsed JSON Object:", res);
+
+            // Handle different possible key structures from ESP32
+            if (res.type === "LOGS" && res.data) {
+                renderLogs(res.data);
+            } else if (res.logs) {
+                renderLogs(res);
+            } else if (res.type === "CFG" && res.data) {
+                renderConfig(res.data);
+            } else if (res.tasks || res.first_interval !== undefined || res.min_interval !== undefined) {
+                renderConfig(res);
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
     function renderConfig(cfg) {
         if (!cfg) return;
         document.getElementById('valTasks').innerText = cfg.tasks ? cfg.tasks.join(", ") : "None";
-        document.getElementById('valFirst').innerText = (cfg.first_interval || 5) + " mins";
-        document.getElementById('valRange').innerText = `${cfg.min_interval || 10} to ${cfg.max_interval || 30} mins`;
+        document.getElementById('valFirst').innerText = (cfg.first_interval !== undefined ? cfg.first_interval : 5) + " mins";
+        document.getElementById('valRange').innerText = `${cfg.min_interval !== undefined ? cfg.min_interval : 10} to ${cfg.max_interval !== undefined ? cfg.max_interval : 30} mins`;
     }
 
     function renderLogs(data) {
-        const logs = data.logs || [];
-        if (logs.length === 0) {
+        const logs = data.logs || data;
+        if (!Array.isArray(logs) || logs.length === 0) {
             logsContainer.innerHTML = `<div class="empty-state">No recorded activity found.</div>`;
             return;
         }
@@ -422,14 +440,14 @@
             const item = document.createElement('div');
             item.className = 'log-item';
             
-            let tagClass = log.out || log.type;
-            let label = log.task || log.type;
+            let tagClass = log.out || log.type || "ACC";
+            let label = log.task || log.type || "Activity";
             if (log.type === "FOCUS") label = `Focus (${log.duration ? Math.round(log.duration/60) : 0}m)`;
 
             item.innerHTML = `
                 <div class="log-info">
                     <span class="log-type">${label}</span>
-                    <span class="log-time">${log.ts}</span>
+                    <span class="log-time">${log.ts || "Unknown time"}</span>
                 </div>
                 <span class="tag ${tagClass}">${tagClass}</span>
             `;
