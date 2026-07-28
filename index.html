@@ -178,7 +178,7 @@
         }
 
         .logs-container {
-            max-height: 200px;
+            max-height: 220px;
             overflow-y: auto;
             background: #0d1117;
             border: 1px solid var(--card-border);
@@ -193,7 +193,7 @@
 
         .log-item {
             color: var(--text-main);
-            padding: 0.2rem 0;
+            padding: 0.25rem 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
 
@@ -294,7 +294,6 @@
     </div>
 
     <script>
-        // BLE UUIDs for Nordic UART Service (NUS)
         const NUS_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
         const NUS_RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
         const NUS_TX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
@@ -303,6 +302,9 @@
         let bleCharacteristicRX = null;
         let bleCharacteristicTX = null;
         let rxBuffer = "";
+        
+        let commandQueue = [];
+        let isSending = false;
 
         async function toggleConnect() {
             if (bleDevice && bleDevice.gatt.connected) {
@@ -313,7 +315,6 @@
 
             try {
                 console.log("Requesting Bluetooth Device...");
-                // Filter by Service UUID instead of strict name matching to ensure the device appears in pairing list
                 bleDevice = await navigator.bluetooth.requestDevice({
                     filters: [{ services: [NUS_SERVICE_UUID] }],
                     optionalServices: [NUS_SERVICE_UUID]
@@ -336,7 +337,7 @@
 
                 onConnected();
                 
-                // Automatically sync time and fetch initial state on connection
+                // Queue startup commands sequentially with breathing room to prevent collisions
                 await syncTime();
                 await fetchConfig();
                 await fetchLogs();
@@ -364,9 +365,10 @@
             bleDevice = null;
             bleCharacteristicRX = null;
             bleCharacteristicTX = null;
+            commandQueue = [];
+            isSending = false;
         }
 
-        // Chunk buffering handler for incoming data
         function handleNotification(event) {
             const value = event.target.value;
             const chunk = new TextDecoder().decode(value);
@@ -399,11 +401,18 @@
             }
         }
 
+        // Sequential Command Queue to eliminate packet collision
         async function sendCommand(cmdObject) {
-            if (!bleCharacteristicRX) {
-                alert("Device not connected!");
-                return;
-            }
+            return new Promise((resolve, reject) => {
+                commandQueue.push({ cmdObject, resolve, reject });
+                processQueue();
+            });
+        }
+
+        async function processQueue() {
+            if (isSending || commandQueue.length === 0 || !bleCharacteristicRX) return;
+            isSending = true;
+            const { cmdObject, resolve, reject } = commandQueue.shift();
 
             const payload = JSON.stringify(cmdObject) + "\n";
             const encoded = new TextEncoder().encode(payload);
@@ -415,8 +424,17 @@
                     await bleCharacteristicRX.writeValueWithResponse(encoded);
                 }
                 console.log("-> Sent:", cmdObject);
+                // Pause slightly between writes so ESP32 doesn't drop or mash data
+                setTimeout(() => {
+                    isSending = false;
+                    resolve();
+                    processQueue();
+                }, 120);
             } catch (error) {
                 console.error("Send failed:", error);
+                isSending = false;
+                reject(error);
+                processQueue();
             }
         }
 
@@ -490,7 +508,10 @@
                 data.logs.slice().reverse().forEach(log => {
                     const div = document.createElement('div');
                     div.className = 'log-item';
-                    div.innerText = `[${log.ts}] Type: ${log.type} ${log.task ? '| Task: ' + log.task + ' (' + log.out + ')' : ''} ${log.duration ? '| Duration: ' + Math.round(log.duration/60) + 'm' : ''}`;
+                    let detailStr = "";
+                    if (log.task) detailStr += ` | Task: ${log.task} (${log.out})`;
+                    if (log.duration) detailStr += ` | Duration: ${Math.round(log.duration/60)}m`;
+                    div.innerText = `[${log.ts}] ${log.type}${detailStr}`;
                     container.appendChild(div);
                 });
             } else {
