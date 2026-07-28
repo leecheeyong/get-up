@@ -10,6 +10,7 @@ import micropython
 from machine import SoftSPI, Pin, RTC
 import st7789
 
+# --- 1. Prevent Antenna Interference ---
 try:
     network.WLAN(network.STA_IF).active(False)
     network.WLAN(network.AP_IF).active(False)
@@ -385,7 +386,7 @@ class BLEServer:
         if self.conn is not None:
             msg = (ujson.dumps(obj) + "\n").encode('utf-8')
             chunk_size = 20
-            
+                
             for i in range(0, len(msg), chunk_size):
                 chunk = msg[i:i+chunk_size]
                 sent = False
@@ -394,12 +395,12 @@ class BLEServer:
                     try:
                         self.ble.gatts_notify(self.conn, self.tx, chunk)
                         sent = True
-                    except OSError:
+                    except OSError as e:
                         attempts += 1
                         time.sleep_ms(50)
                 if not sent:
-                    print("! Failed to send BLE chunk: Notifications not enabled or buffer full")
-                time.sleep_ms(25) 
+                    print("! Failed to send: Browser notifications not enabled for this session yet.")
+                time.sleep_ms(25)
 
 MODES = [15, 30, 45, 60, 0] 
 
