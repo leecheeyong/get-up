@@ -313,8 +313,9 @@
 
             try {
                 console.log("Requesting Bluetooth Device...");
+                // Filter by Service UUID instead of strict name matching to ensure the device appears in pairing list
                 bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ name: "SmartSit" }],
+                    filters: [{ services: [NUS_SERVICE_UUID] }],
                     optionalServices: [NUS_SERVICE_UUID]
                 });
 
