@@ -7,7 +7,7 @@
     <style>
         :root {
             --bg-color: #0d1117;
-            --card-bg: rgba(22, 27, 34, 0.7);
+            --card-bg: rgba(22, 27, 34, 0.75);
             --card-border: rgba(255, 255, 255, 0.08);
             --text-main: #c9d1d9;
             --text-muted: #8b949e;
@@ -167,7 +167,7 @@
             color: #ffffff;
             font-size: 0.875rem;
             width: 100%;
-            height: 100px;
+            height: 90px;
             resize: vertical;
             font-family: monospace;
         }
@@ -178,7 +178,7 @@
         }
 
         .logs-container {
-            max-height: 220px;
+            max-height: 200px;
             overflow-y: auto;
             background: #0d1117;
             border: 1px solid var(--card-border);
@@ -195,6 +195,18 @@
             color: var(--text-main);
             padding: 0.25rem 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .debug-console {
+            max-height: 120px;
+            overflow-y: auto;
+            background: #06080a;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
         }
 
         .status-dot {
@@ -291,6 +303,12 @@
                 <div class="log-item" style="color: var(--text-muted);">No logs loaded yet. Connect and fetch to view.</div>
             </div>
         </div>
+
+        <!-- Live BLE Raw Stream Monitor -->
+        <div class="card" style="padding: 1rem;">
+            <div class="card-title" style="margin-bottom: 0.5rem;">Live BLE Stream Debug</div>
+            <div id="debugConsole" class="debug-console">Waiting for connection...</div>
+        </div>
     </div>
 
     <script>
@@ -306,6 +324,13 @@
         let commandQueue = [];
         let isSending = false;
 
+        function logDebug(text) {
+            const consoleEl = document.getElementById('debugConsole');
+            consoleEl.innerHTML += `<div>> ${text}</div>`;
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+            console.log(text);
+        }
+
         async function toggleConnect() {
             if (bleDevice && bleDevice.gatt.connected) {
                 bleDevice.gatt.disconnect();
@@ -314,7 +339,7 @@
             }
 
             try {
-                console.log("Requesting Bluetooth Device...");
+                logDebug("Requesting Bluetooth Device...");
                 bleDevice = await navigator.bluetooth.requestDevice({
                     filters: [{ services: [NUS_SERVICE_UUID] }],
                     optionalServices: [NUS_SERVICE_UUID]
@@ -322,13 +347,13 @@
 
                 bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
 
-                console.log("Connecting to GATT Server...");
+                logDebug("Connecting to GATT Server...");
                 const server = await bleDevice.gatt.connect();
 
-                console.log("Getting NUS Service...");
+                logDebug("Getting NUS Service...");
                 const service = await server.getPrimaryService(NUS_SERVICE_UUID);
 
-                console.log("Getting Characteristics...");
+                logDebug("Getting Characteristics...");
                 bleCharacteristicRX = await service.getCharacteristic(NUS_RX_UUID);
                 bleCharacteristicTX = await service.getCharacteristic(NUS_TX_UUID);
 
@@ -337,13 +362,13 @@
 
                 onConnected();
                 
-                // Queue startup commands sequentially with breathing room to prevent collisions
+                // Queue startup commands sequentially with breathing room
                 await syncTime();
                 await fetchConfig();
                 await fetchLogs();
 
             } catch (error) {
-                console.error("Connection failed:", error);
+                logDebug("Connection error: " + error.message);
                 alert("Connection failed: " + error.message);
             }
         }
@@ -354,6 +379,7 @@
             document.getElementById('connectBtn').innerText = "Disconnect";
             document.getElementById('connectBtn').style.background = "var(--accent-red)";
             document.getElementById('connectBtn').style.color = "#ffffff";
+            logDebug("Connected successfully!");
         }
 
         function onDisconnected() {
@@ -367,6 +393,7 @@
             bleCharacteristicTX = null;
             commandQueue = [];
             isSending = false;
+            logDebug("Device disconnected.");
         }
 
         function handleNotification(event) {
@@ -380,28 +407,38 @@
                 rxBuffer = rxBuffer.slice(lineEnd + 1);
 
                 if (completeMessage) {
+                    logDebug("RX Line: " + completeMessage);
                     try {
                         const parsed = JSON.parse(completeMessage);
                         handleDeviceMessage(parsed);
                     } catch (err) {
-                        console.error("Failed to parse JSON:", completeMessage);
+                        logDebug("JSON Parse Error: " + err.message);
                     }
                 }
             }
         }
 
+        // Universal handler supporting both wrapped ({type, data}) and direct JSON formats
         function handleDeviceMessage(msg) {
-            console.log("<- Received:", msg);
-            if (msg.type === "CFG") {
+            // Check for Config Data
+            if (msg.type === "CFG" && msg.data) {
                 populateConfigUI(msg.data);
-            } else if (msg.type === "LOGS") {
+            } else if (msg.tasks !== undefined || msg.first_interval !== undefined) {
+                populateConfigUI(msg);
+            }
+            
+            // Check for Log Data
+            if (msg.type === "LOGS" && msg.data) {
                 populateLogsUI(msg.data);
-            } else if (msg.type === "ACK") {
-                console.log("Command acknowledged by device.");
+            } else if (msg.logs !== undefined || msg.stats !== undefined) {
+                populateLogsUI(msg);
+            }
+            
+            if (msg.type === "ACK" || msg.status === "OK") {
+                logDebug("Acknowledged by device.");
             }
         }
 
-        // Sequential Command Queue to eliminate packet collision
         async function sendCommand(cmdObject) {
             return new Promise((resolve, reject) => {
                 commandQueue.push({ cmdObject, resolve, reject });
@@ -423,15 +460,14 @@
                 } else {
                     await bleCharacteristicRX.writeValueWithResponse(encoded);
                 }
-                console.log("-> Sent:", cmdObject);
-                // Pause slightly between writes so ESP32 doesn't drop or mash data
+                logDebug("TX: " + JSON.stringify(cmdObject));
                 setTimeout(() => {
                     isSending = false;
                     resolve();
                     processQueue();
-                }, 120);
+                }, 150);
             } catch (error) {
-                console.error("Send failed:", error);
+                logDebug("TX Error: " + error.message);
                 isSending = false;
                 reject(error);
                 processQueue();
@@ -475,6 +511,7 @@
         }
 
         function populateConfigUI(cfg) {
+            logDebug("Populating Config UI...");
             if (cfg.tasks) {
                 document.getElementById('tasksInput').value = JSON.stringify(cfg.tasks);
             }
@@ -490,12 +527,14 @@
         }
 
         function populateLogsUI(data) {
+            logDebug("Populating Logs UI...");
             const container = document.getElementById('logsContainer');
             container.innerHTML = "";
 
-            if (data.stats) {
-                const acc = data.stats.acc || 0;
-                const ign = data.stats.ign || 0;
+            const stats = data.stats || data;
+            if (stats && (stats.acc !== undefined || stats.ign !== undefined)) {
+                const acc = stats.acc || 0;
+                const ign = stats.ign || 0;
                 const total = acc + ign;
                 const comp = total > 0 ? Math.round((acc / total) * 100) : 0;
 
@@ -504,14 +543,15 @@
                 document.getElementById('statIgn').innerText = ign;
             }
 
-            if (data.logs && data.logs.length > 0) {
-                data.logs.slice().reverse().forEach(log => {
+            const logsList = data.logs || (Array.isArray(data) ? data : []);
+            if (logsList.length > 0) {
+                logsList.slice().reverse().forEach(log => {
                     const div = document.createElement('div');
                     div.className = 'log-item';
                     let detailStr = "";
-                    if (log.task) detailStr += ` | Task: ${log.task} (${log.out})`;
+                    if (log.task) detailStr += ` | Task: ${log.task} (${log.out || log.outcome || 'N/A'})`;
                     if (log.duration) detailStr += ` | Duration: ${Math.round(log.duration/60)}m`;
-                    div.innerText = `[${log.ts}] ${log.type}${detailStr}`;
+                    div.innerText = `[${log.ts || log.timestamp || '00:00'}] ${log.type || log.event || 'EVENT'}${detailStr}`;
                     container.appendChild(div);
                 });
             } else {
