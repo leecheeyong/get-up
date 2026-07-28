@@ -110,6 +110,12 @@
             box-shadow: 0 4px 12px var(--accent-glow);
         }
 
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--danger);
+            color: #fca5a5;
+        }
+
         .btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
@@ -122,7 +128,7 @@
             margin-top: 10px;
         }
 
-        /* Stats & Logs */
+        /* Stats & Content */
         .section-title {
             font-size: 13px;
             font-weight: 600;
@@ -132,11 +138,30 @@
             margin-bottom: 12px;
         }
 
+        .config-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .config-row {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .config-label { color: var(--text-muted); }
+        .config-val { font-weight: 500; text-align: right; max-width: 60%; word-break: break-word; }
+
         .logs-list {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            max-height: 240px;
+            max-height: 220px;
             overflow-y: auto;
             padding-right: 4px;
         }
@@ -173,7 +198,7 @@
             text-align: center;
             color: var(--text-muted);
             font-size: 13px;
-            padding: 20px 0;
+            padding: 16px 0;
         }
     </style>
 </head>
@@ -196,19 +221,38 @@
 
     <!-- Controls -->
     <div class="card" style="opacity: 0.4; pointer-events: none;" id="controlsCard">
-        <div class="section-title">Device Synchronization</div>
+        <div class="section-title">Device Actions</div>
+        <button class="btn" id="btnSyncTime">Sync Current Time</button>
         <div class="action-grid">
-            <button class="btn" id="btnSyncTime">Sync Time</button>
             <button class="btn" id="btnGetConfig">Fetch Config</button>
+            <button class="btn" id="btnGetLogs">Fetch Logs</button>
         </div>
-        <button class="btn btn-primary" id="btnGetLogs" style="margin-top: 10px;">Fetch Activity Logs</button>
     </div>
 
-    <!-- Logs & Data Feed -->
+    <!-- Configuration Card -->
+    <div class="card" style="opacity: 0.4; pointer-events: none;" id="configCard">
+        <div class="section-title">Device Configuration</div>
+        <div class="config-details">
+            <div class="config-row">
+                <span class="config-label">Tasks</span>
+                <span class="config-val" id="valTasks">Not loaded</span>
+            </div>
+            <div class="config-row">
+                <span class="config-label">First Interval</span>
+                <span class="config-val" id="valFirst">-- mins</span>
+            </div>
+            <div class="config-row">
+                <span class="config-label">Random Range</span>
+                <span class="config-val" id="valRange">-- to -- mins</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logs Card -->
     <div class="card" style="opacity: 0.4; pointer-events: none;" id="logsCard">
         <div class="section-title">Activity Feed</div>
         <div class="logs-list" id="logsContainer">
-            <div class="empty-state">No logs loaded yet. Click "Fetch Activity Logs".</div>
+            <div class="empty-state">No logs loaded yet. Click "Fetch Logs".</div>
         </div>
     </div>
 </div>
@@ -223,7 +267,6 @@
     let txCharacteristic = null;
     let receiveBuffer = '';
     
-    // Command Queue to prevent overlapping/corrupted payload bytes
     let commandQueue = [];
     let isWriting = false;
 
@@ -232,10 +275,17 @@
     const statusText = document.getElementById('statusText');
     const deviceSub = document.getElementById('deviceSub');
     const controlsCard = document.getElementById('controlsCard');
+    const configCard = document.getElementById('configCard');
     const logsCard = document.getElementById('logsCard');
     const logsContainer = document.getElementById('logsContainer');
 
     btnConnect.addEventListener('click', async () => {
+        if (bleDevice && bleDevice.gatt.connected) {
+            bleDevice.gatt.disconnect();
+            onDisconnected();
+            return;
+        }
+
         try {
             statusText.innerText = "Connecting...";
             bleDevice = await navigator.bluetooth.requestDevice({
@@ -254,20 +304,24 @@
             await txCharacteristic.startNotifications();
             txCharacteristic.addEventListener('characteristicvaluechanged', handleIncomingData);
 
-            // Update UI to App Mode
+            // Update UI
             statusDot.classList.add('connected');
             statusText.innerText = "Connected";
-            deviceSub.innerText = bleDevice.name;
+            deviceSub.innerText = bleDevice.name || "SmartSit-Tracker";
             btnConnect.innerText = "Disconnect";
             btnConnect.classList.add('btn-danger');
+            
             controlsCard.style.opacity = "1";
             controlsCard.style.pointerEvents = "auto";
+            configCard.style.opacity = "1";
+            configCard.style.pointerEvents = "auto";
             logsCard.style.opacity = "1";
             logsCard.style.pointerEvents = "auto";
 
-            // Auto-sync time and fetch logs on initial connection
+            // Safely sequence initial sync (spaced out to avoid collision)
             queueCommand({ cmd: "SYNC_TIME", time: getFormattedTime() });
-            queueCommand({ cmd: "GET_LOGS" });
+            setTimeout(() => queueCommand({ cmd: "GET_CFG" }), 500);
+            setTimeout(() => queueCommand({ cmd: "GET_LOGS" }), 1000);
 
         } catch (error) {
             console.error(error);
@@ -284,6 +338,8 @@
         btnConnect.classList.remove('btn-danger');
         controlsCard.style.opacity = "0.4";
         controlsCard.style.pointerEvents = "none";
+        configCard.style.opacity = "0.4";
+        configCard.style.pointerEvents = "none";
         logsCard.style.opacity = "0.4";
         logsCard.style.pointerEvents = "none";
     }
@@ -296,7 +352,7 @@
         ];
     }
 
-    // --- Safe Serialized Queue ---
+    // --- Safe Serialized Queue with 400ms buffer ---
     function queueCommand(cmdObject) {
         commandQueue.push(cmdObject);
         processQueue();
@@ -310,7 +366,7 @@
             const jsonStr = JSON.stringify(cmdObject) + '\n';
             const encoder = new TextEncoder();
             await rxCharacteristic.writeValue(encoder.encode(jsonStr));
-            await new Promise(r => setTimeout(r, 120)); // Breathing room for ESP32 RX buffer
+            await new Promise(r => setTimeout(r, 400)); // Safe delay between payloads
         } catch (err) {
             console.error("Write error:", err);
         } finally {
@@ -335,8 +391,9 @@
                     if (response.type === "LOGS") {
                         renderLogs(response.data);
                     } else if (response.type === "CFG") {
-                        console.log("Config received:", response.data);
-                        alert("Configuration loaded successfully!");
+                        renderConfig(response.data);
+                    } else if (response.type === "ACK") {
+                        console.log("Command acknowledged by device.");
                     }
                 } catch (e) {
                     console.error("JSON parse error:", completeLine);
@@ -345,7 +402,14 @@
         }
     }
 
-    // --- Render App View ---
+    // --- Render UI Views ---
+    function renderConfig(cfg) {
+        if (!cfg) return;
+        document.getElementById('valTasks').innerText = cfg.tasks ? cfg.tasks.join(", ") : "None";
+        document.getElementById('valFirst').innerText = (cfg.first_interval || 5) + " mins";
+        document.getElementById('valRange').innerText = `${cfg.min_interval || 10} to ${cfg.max_interval || 30} mins`;
+    }
+
     function renderLogs(data) {
         const logs = data.logs || [];
         if (logs.length === 0) {
@@ -354,14 +418,13 @@
         }
 
         logsContainer.innerHTML = '';
-        // Show newest first
-        logs.reverse().forEach(log => {
+        logs.slice().reverse().forEach(log => {
             const item = document.createElement('div');
             item.className = 'log-item';
             
             let tagClass = log.out || log.type;
             let label = log.task || log.type;
-            if (log.type === "FOCUS") label = `Focus Session (${log.duration ? Math.round(log.duration/60) : 0}m)`;
+            if (log.type === "FOCUS") label = `Focus (${log.duration ? Math.round(log.duration/60) : 0}m)`;
 
             item.innerHTML = `
                 <div class="log-info">
@@ -377,7 +440,7 @@
     // Button Listeners
     document.getElementById('btnSyncTime').addEventListener('click', () => {
         queueCommand({ cmd: "SYNC_TIME", time: getFormattedTime() });
-        alert("Time synced with device!");
+        alert("Time synced successfully!");
     });
 
     document.getElementById('btnGetConfig').addEventListener('click', () => {
