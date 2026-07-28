@@ -4,462 +4,219 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSit Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --card-border: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent-green: #22c55e;
-            --accent-cyan: #06b6d4;
-            --accent-orange: #f97316;
-            --accent-red: #ef4444;
-            --accent-yellow: #eab308;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 800px;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 16px;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            margin: 0;
-            color: var(--accent-cyan);
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .card h2 {
-            font-size: 1.1rem;
-            margin-top: 0;
-            margin-bottom: 16px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        button {
-            background-color: var(--accent-cyan);
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.1s;
-        }
-
-        button:hover {
-            opacity: 0.9;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
-        button.secondary {
-            background-color: var(--card-border);
-            color: var(--text-main);
-        }
-
-        button.danger {
-            background-color: var(--accent-red);
-            color: #fff;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            background-color: rgba(239, 68, 68, 0.2);
-            color: var(--accent-red);
-        }
-
-        .status-badge.connected {
-            background-color: rgba(34, 197, 94, 0.2);
-            color: var(--accent-green);
-        }
-
-        .stats-row {
-            display: flex;
-            justify-content: space-around;
-            text-align: center;
-        }
-
-        .stat-box .val {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--accent-green);
-        }
-
-        .stat-box .label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        textarea {
-            width: 100%;
-            background-color: var(--bg-color);
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            color: var(--text-main);
-            padding: 8px 12px;
-            box-sizing: border-box;
-            font-family: monospace;
-            margin-bottom: 10px;
-            height: 120px;
-            resize: vertical;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 8px 12px;
-            border-bottom: 1px solid var(--card-border);
-        }
-
-        th {
-            color: var(--text-muted);
-        }
-
-        .log-container {
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        .action-bar {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-
-        .notice {
-            background-color: rgba(6, 182, 212, 0.1);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            color: var(--accent-cyan);
-            margin-bottom: 20px;
+        .glass {
+            background: rgba(24, 227, 227, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(41, 101, 101, 0.25);
         }
     </style>
 </head>
-<body>
-
-<div class="container">
-    <header>
-        <div>
-            <h1>SmartSit Control Hub</h1>
-        </div>
-        <div>
-            <span id="bleStatus" class="status-badge">DISCONNECTED</span>
-            <button id="connectBtn" onclick="toggleConnection()">Connect BLE</button>
-        </div>
-    </header>
-
-    <div class="notice">
-        <strong>Tip:</strong> Make sure you are running this page via **localhost** (e.g., using VS Code Live Server) rather than opening the file directly via `file:///`, as browsers block Web Bluetooth on local file paths.
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="card">
-        <h2>Quick Commands</h2>
-        <div class="action-bar">
-            <button onclick="sendSyncTime()">Sync Time</button>
-            <button class="secondary" onclick="sendGetCfg()">Fetch Config</button>
-            <button class="secondary" onclick="sendGetLogs()">Fetch Logs & Stats</button>
-        </div>
-    </div>
-
-    <!-- Stats & Overview -->
-    <div class="card">
-        <h2>Live Overview</h2>
-        <div class="stats-row">
-            <div class="stat-box">
-                <div class="val" id="statAcc">0</div>
-                <div class="label">Accepted Tasks</div>
-            </div>
-            <div class="stat-box">
-                <div class="val" id="statIgn" style="color: var(--accent-orange);">0</div>
-                <div class="label">Ignored Tasks</div>
-            </div>
-            <div class="stat-box">
-                <div class="val" id="statFocus" style="color: var(--accent-cyan);">0m</div>
-                <div class="label">Focus Time</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Configuration Editor -->
-    <div class="card">
-        <h2>Device Configuration</h2>
-        <label for="cfgJson">Config JSON:</label>
-        <textarea id="cfgJson"></textarea>
-        <button onclick="sendSaveCfg()">Save Configuration</button>
-    </div>
-
-    <!-- Activity Log History -->
-    <div class="card">
-        <h2>Activity History</h2>
-        <div class="log-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>Type</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody id="logTableBody">
-                    <tr><td colspan="3" style="color: var(--text-muted); text-align: center;">No logs loaded yet.</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<script>
-    const NUS_SERVICE_UUID  = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-    const NUS_TX_CHAR_UUID  = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; 
-    const NUS_RX_CHAR_UUID  = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; 
-
-    let bluetoothDevice = null;
-    let txCharacteristic = null;
-    let rxCharacteristic = null;
-    let rxBuffer = "";
-
-    const statusBadge = document.getElementById('bleStatus');
-    const connectBtn = document.getElementById('connectBtn');
-    const cfgJsonArea = document.getElementById('cfgJson');
-    const logTableBody = document.getElementById('logTableBody');
-
-    async function toggleConnection() {
-        if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
-            await connectBLE();
-        } else {
-            disconnectBLE();
-        }
-    }
-
-    async function connectBLE() {
-        try {
-            statusBadge.textContent = "CONNECTING...";
-            
-            // Using acceptAllDevices to prevent filtering mismatches on Windows/Linux Bluetooth stacks
-            bluetoothDevice = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: [NUS_SERVICE_UUID]
-            });
-
-            bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
-
-            const server = await bluetoothDevice.gatt.connect();
-            const service = await server.getPrimaryService(NUS_SERVICE_UUID);
-
-            txCharacteristic = await service.getCharacteristic(NUS_TX_CHAR_UUID);
-            rxCharacteristic = await service.getCharacteristic(NUS_RX_CHAR_UUID);
-
-            await txCharacteristic.startNotifications();
-            txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
-
-            statusBadge.textContent = "CONNECTED";
-            statusBadge.classList.add('connected');
-            connectBtn.textContent = "Disconnect";
-
-            setTimeout(() => {
-                sendGetCfg();
-                sendGetLogs();
-            }, 500);
-
-        } catch (error) {
-            console.error("Connection failed:", error);
-            statusBadge.textContent = "DISCONNECTED";
-            statusBadge.classList.remove('connected');
-        }
-    }
-
-    function disconnectBLE() {
-        if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-            bluetoothDevice.gatt.disconnect();
-        }
-        onDisconnected();
-    }
-
-    function onDisconnected() {
-        statusBadge.textContent = "DISCONNECTED";
-        statusBadge.classList.remove('connected');
-        connectBtn.textContent = "Connect BLE";
-        bluetoothDevice = null;
-        txCharacteristic = null;
-        rxCharacteristic = null;
-    }
-
-    function handleNotifications(event) {
-        const value = event.target.value;
-        const decoder = new TextDecoder('utf-8');
-        const chunk = decoder.decode(value);
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-cyan-500 selection:text-black">
+    <div class="max-w-4xl mx-auto space-y-6">
         
-        rxBuffer += chunk;
+        <!-- Header & Connection -->
+        <header class="glass rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
+            <div>
+                <h1 class="text-2xl font-bold tracking-wider text-cyan-400">SmartSit Dashboard</h1>
+                <p id="connectionStatus" class="text-xs text-slate-400 mt-1">Status: Disconnected</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="connectBtn" onclick="connectBLE()" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-cyan-500/20 text-sm">
+                    Connect BLE
+                </button>
+                <button id="disconnectBtn" onclick="disconnectBLE()" class="hidden bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-semibold px-5 py-2.5 rounded-xl transition-all text-sm">
+                    Disconnect
+                </button>
+            </div>
+        </header>
 
-        while (rxBuffer.includes('\n')) {
-            const lineIdx = rxBuffer.indexOf('\n');
-            const line = rxBuffer.substring(0, lineIdx).trim();
-            rxBuffer = rxBuffer.substring(lineIdx + 1);
+        <!-- Control Panel -->
+        <section class="glass rounded-2xl p-6 shadow-xl space-y-4">
+            <h2 class="text-sm font-semibold uppercase tracking-widest text-cyan-400">Device Controls</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button onclick="sendCommand({c: 'CFG'})" class="bg-slate-900/60 hover:bg-cyan-500/10 border border-slate-800 hover:border-cyan-500/40 p-3 rounded-xl text-sm transition-all text-slate-200">
+                    Get Config
+                </button>
+                <button onclick="sendCommand({c: 'LOGS'})" class="bg-slate-900/60 hover:bg-cyan-500/10 border border-slate-800 hover:border-cyan-500/40 p-3 rounded-xl text-sm transition-all text-slate-200">
+                    Get Logs
+                </button>
+                <button onclick="syncTime()" class="bg-slate-900/60 hover:bg-cyan-500/10 border border-slate-800 hover:border-cyan-500/40 p-3 rounded-xl text-sm transition-all text-slate-200">
+                    Sync Time
+                </button>
+                <button onclick="clearConsole()" class="bg-slate-900/60 hover:bg-rose-500/10 border border-slate-800 hover:border-rose-500/40 p-3 rounded-xl text-sm transition-all text-slate-200">
+                    Clear Console
+                </button>
+            </div>
+        </section>
 
-            if (line) {
-                try {
-                    const parsed = JSON.parse(line);
-                    handleDeviceMessage(parsed);
-                } catch (e) {
-                    console.error("Malformed JSON received:", line);
-                }
+        <!-- Data Output Windows -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Config View -->
+            <div class="glass rounded-2xl p-6 shadow-xl flex flex-col h-80">
+                <h2 class="text-sm font-semibold uppercase tracking-widest text-cyan-400 mb-3">Configuration</h2>
+                <pre id="configOutput" class="bg-slate-900/80 border border-slate-800/80 p-4 rounded-xl flex-1 overflow-auto text-xs text-slate-300 font-mono">No config loaded...</pre>
+            </div>
+
+            <!-- Logs / Live Output Stream -->
+            <div class="glass rounded-2xl p-6 shadow-xl flex flex-col h-80">
+                <h2 class="text-sm font-semibold uppercase tracking-widest text-cyan-400 mb-3">Activity Stream</h2>
+                <div id="logsOutput" class="bg-slate-900/80 border border-slate-800/80 p-4 rounded-xl flex-1 overflow-auto text-xs text-slate-300 font-mono space-y-1">
+                    <div class="text-slate-500">Waiting for data stream...</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        let bluetoothDevice = null;
+        let rxCharacteristic = null;
+        let txCharacteristic = null;
+        let bleBuffer = "";
+
+        const NUS_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+        const NUS_RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Browser writes here
+        const NUS_TX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Browser reads/notifies here
+
+        async function connectBLE() {
+            try {
+                document.getElementById('connectionStatus').innerText = "Status: Requesting Bluetooth Device...";
+                
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: "Smart" }, { namePrefix: "SmartSit" }],
+                    optionalServices: [NUS_SERVICE_UUID]
+                });
+
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+                const server = await bluetoothDevice.gatt.connect();
+                const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+
+                rxCharacteristic = await service.getCharacteristic(NUS_RX_UUID);
+                txCharacteristic = await service.getCharacteristic(NUS_TX_UUID);
+
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+
+                document.getElementById('connectionStatus').innerText = `Status: Connected to ${bluetoothDevice.name}`;
+                document.getElementById('connectBtn').classList.add('hidden');
+                document.getElementById('disconnectBtn').classList.remove('hidden');
+                appendLog("System", "BLE Connected Successfully.");
+            } catch (error) {
+                console.error("Connection failed:", error);
+                document.getElementById('connectionStatus').innerText = "Status: Connection Failed / Cancelled";
             }
         }
-    }
 
-    function handleDeviceMessage(msg) {
-        console.log("<- Received from ESP32:", msg);
-        
-        if (msg.type === "CFG" && msg.data) {
-            cfgJsonArea.value = JSON.stringify(msg.data, null, 4);
-        } else if (msg.type === "LOGS" && msg.data) {
-            updateUIStatsAndLogs(msg.data);
-        } else if (msg.type === "ACK") {
-            alert("Command acknowledged successfully!");
-        }
-    }
-
-    async function sendCommand(obj) {
-        if (!rxCharacteristic) {
-            alert("Not connected to device!");
-            return;
+        function disconnectBLE() {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+            }
+            onDisconnected();
         }
 
-        const payload = JSON.stringify(obj) + "\n";
-        const encoder = new TextEncoder();
-        const data = encoder.encode(payload);
-
-        const CHUNK_SIZE = 20;
-        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-            const chunk = data.slice(i, i + CHUNK_SIZE);
-            await rxCharacteristic.writeValueWithoutResponse(chunk);
-            await new Promise(r => setTimeout(r, 20)); 
-        }
-        console.log("-> Sent:", obj);
-    }
-
-    function sendSyncTime() {
-        const now = new Date();
-        const timeArray = [
-            now.getFullYear(),
-            now.getMonth() + 1,
-            now.getDate(),
-            now.getHours(),
-            now.getMinutes(),
-            now.getSeconds()
-        ];
-        sendCommand({ c: "SYNC", t: timeArray });
-    }
-
-    function sendGetCfg() {
-        sendCommand({ c: "CFG" });
-    }
-
-    function sendGetLogs() {
-        sendCommand({ c: "LOGS" });
-    }
-
-    function sendSaveCfg() {
-        try {
-            const parsedCfg = JSON.parse(cfgJsonArea.value);
-            sendCommand({ c: "SCFG", d: parsedCfg });
-        } catch (e) {
-            alert("Invalid JSON format in configuration text area.");
-        }
-    }
-
-    function updateUIStatsAndLogs(data) {
-        if (data.stats) {
-            document.getElementById('statAcc').textContent = data.stats.acc || 0;
-            document.getElementById('statIgn').textContent = data.stats.ign || 0;
-            document.getElementById('statFocus').textContent = (data.stats.focus_m || 0) + "m";
+        function onDisconnected() {
+            document.getElementById('connectionStatus').innerText = "Status: Disconnected";
+            document.getElementById('connectBtn').classList.remove('hidden');
+            document.getElementById('disconnectBtn').classList.add('hidden');
+            bluetoothDevice = null;
+            rxCharacteristic = null;
+            txCharacteristic = null;
+            appendLog("System", "BLE Disconnected.");
         }
 
-        if (data.logs && Array.isArray(data.logs)) {
-            logTableBody.innerHTML = "";
-            if (data.logs.length === 0) {
-                logTableBody.innerHTML = `<tr><td colspan="3" style="color: var(--text-muted); text-align: center;">No logs found.</td></tr>`;
+        // Chunk Buffer Assembly
+        function handleNotifications(event) {
+            const value = event.target.value;
+            const chunk = new TextDecoder('utf-8').decode(value);
+            
+            bleBuffer += chunk;
+            
+            let newlineIndex;
+            while ((newlineIndex = bleBuffer.indexOf('\n')) !== -1) {
+                const completeMessage = bleBuffer.slice(0, newlineIndex);
+                bleBuffer = bleBuffer.slice(newlineIndex + 1);
+                
+                try {
+                    const packet = JSON.parse(completeMessage);
+                    processPacket(packet);
+                } catch (e) {
+                    console.error("Malformed JSON received:", completeMessage);
+                }
+            }
+            
+            if (bleBuffer.length > 512) {
+                bleBuffer = ""; // Prevent buffer overflow if malformed
+            }
+        }
+
+        function processPacket(packet) {
+            console.log("Parsed Packet:", packet);
+            if (packet.type === "CFG") {
+                document.getElementById('configOutput').innerText = JSON.stringify(packet.data, null, 2);
+                appendLog("RX", "Configuration updated.");
+            } else if (packet.type === "LOGS") {
+                document.getElementById('logsOutput').innerHTML = "";
+                if (packet.data.logs && Array.isArray(packet.data.logs)) {
+                    packet.data.logs.forEach(log => {
+                        appendLog(log.type || "LOG", JSON.stringify(log));
+                    });
+                } else {
+                    appendLog("LOGS", JSON.stringify(packet.data, null, 2));
+                }
+            } else if (packet.type === "ACK") {
+                appendLog("ACK", "Command acknowledged by device.");
+            }
+        }
+
+        async function sendCommand(cmdObj) {
+            if (!rxCharacteristic) {
+                alert("Please connect to the device via BLE first.");
                 return;
             }
-
-            const reversedLogs = [...data.logs].reverse();
-            for (const log of reversedLogs) {
-                const tr = document.createElement('tr');
+            try {
+                const jsonStr = JSON.stringify(cmdObj) + "\n";
+                const encoder = new TextEncoder();
                 
-                const tdTs = document.createElement('td');
-                tdTs.textContent = log.ts || "-";
-                
-                const tdType = document.createElement('td');
-                tdType.textContent = log.type || "-";
-                tdType.style.fontWeight = "bold";
-                if (log.type === "TASK") tdType.style.color = log.out === "ACC" ? "var(--accent-green)" : "var(--accent-orange)";
-                if (log.type === "FOCUS") tdType.style.color = "var(--accent-cyan)";
-
-                const tdDetails = document.createElement('td');
-                let detailsStr = "";
-                for (const [k, v] of Object.entries(log)) {
-                    if (k !== "ts" && k !== "type") {
-                        detailsStr += `${k}: ${v}  `;
-                    }
-                }
-                tdDetails.textContent = detailsStr || "-";
-
-                tr.appendChild(tdTs);
-                tr.appendChild(tdType);
-                tr.appendChild(tdDetails);
-                logTableBody.appendChild(tr);
+                // Write in chunks if needed or send direct if payload is small
+                await rxCharacteristic.writeValue(encoder.encode(jsonStr));
+                appendLog("TX", JSON.stringify(cmdObj));
+            } catch (error) {
+                console.error("Failed to send command:", error);
+                appendLog("Error", "Failed to transmit command.");
             }
         }
-    }
-</script>
 
+        function syncTime() {
+            const now = new Date();
+            const timeArray = [
+                now.getFullYear(),
+                now.getMonth() + 1,
+                now.getDate(),
+                now.getHours(),
+                now.getMinutes(),
+                now.getSeconds()
+            ];
+            sendCommand({ c: 'SYNC', t: timeArray });
+        }
+
+        function appendLog(tag, text) {
+            const container = document.getElementById('logsOutput');
+            const div = document.createElement('div');
+            div.className = "border-b border-slate-800/50 pb-1 mb-1";
+            div.innerHTML = `<span class="text-cyan-400 font-bold">[${tag}]</span> <span class="text-slate-300">${text}</span>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('logsOutput').innerHTML = '<div class="text-slate-500">Console cleared.</div>';
+            document.getElementById('configOutput').innerText = "No config loaded...";
+            bleBuffer = "";
+        }
+    </script>
 </body>
 </html>
