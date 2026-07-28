@@ -241,8 +241,17 @@
             }
             const encoder = new TextEncoder();
             const jsonStr = JSON.stringify(cmdObj) + "\n";
+            const data = encoder.encode(jsonStr);
+            
             try {
-                await rxCharacteristic.writeValue(encoder.encode(jsonStr));
+                // FIX: Manually chunk data into 20 bytes to prevent Web Bluetooth truncation
+                const CHUNK_SIZE = 20;
+                for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                    const chunk = data.slice(i, i + CHUNK_SIZE);
+                    await rxCharacteristic.writeValue(chunk);
+                    // 20ms delay gives the ESP32 time to read and append the chunk to its buffer
+                    await new Promise(r => setTimeout(r, 20)); 
+                }
                 console.log("-> Sent:", cmdObj);
             } catch (e) {
                 console.error("Failed to send command:", e);
