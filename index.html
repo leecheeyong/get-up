@@ -229,8 +229,8 @@
             
             // acceptAllDevices: true ensures Android Chrome lists everything without filter blocks
             bluetoothDevice = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: [SERVICE_UUID]
+                filters: [{ services: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e'] }],
+                optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
             });
 
             bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
