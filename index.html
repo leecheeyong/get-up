@@ -6,558 +6,471 @@
     <title>SmartSit Dashboard</title>
     <style>
         :root {
-            --bg-color: #0d1117;
-            --card-bg: rgba(22, 27, 34, 0.75);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --text-main: #c9d1d9;
-            --text-muted: #8b949e;
-            --accent-green: #2ea043;
-            --accent-cyan: #38bdf8;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-green: #22c55e;
+            --accent-cyan: #06b6d4;
             --accent-orange: #f97316;
             --accent-red: #ef4444;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+            --accent-yellow: #eab308;
         }
 
         body {
-            font-family: var(--font-family);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem 1rem;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(46, 160, 67, 0.05) 0%, transparent 40%);
         }
 
         .container {
             width: 100%;
             max-width: 800px;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
         }
 
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--card-border);
-            padding: 1.25rem 1.5rem;
-            border-radius: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 16px;
         }
 
         h1 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            letter-spacing: -0.025em;
-            color: #ffffff;
-        }
-
-        .btn {
-            background: #21262d;
-            color: var(--text-main);
-            border: 1px solid var(--card-border);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn:hover {
-            background: #30363d;
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .btn-primary {
-            background: var(--accent-cyan);
-            color: #000000;
-            border: none;
-            font-weight: 600;
-        }
-
-        .btn-primary:hover {
-            background: #0ea5e9;
-        }
-
-        .card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .card-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-        }
-
-        .stat-box {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--card-border);
-            border-radius: 8px;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-
-        .stat-value {
             font-size: 1.5rem;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        label {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-        }
-
-        input[type="text"], input[type="number"] {
-            background: #0d1117;
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            padding: 0.75rem;
-            color: #ffffff;
-            font-size: 0.875rem;
-            width: 100%;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--accent-cyan);
-        }
-
-        textarea {
-            background: #0d1117;
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            padding: 0.75rem;
-            color: #ffffff;
-            font-size: 0.875rem;
-            width: 100%;
-            height: 90px;
-            resize: vertical;
-            font-family: monospace;
-        }
-
-        .action-row {
-            display: flex;
-            gap: 0.75rem;
-        }
-
-        .logs-container {
-            max-height: 200px;
-            overflow-y: auto;
-            background: #0d1117;
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            padding: 0.75rem;
-            font-family: monospace;
-            font-size: 0.8125rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-        }
-
-        .log-item {
-            color: var(--text-main);
-            padding: 0.25rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-        }
-
-        .debug-console {
-            max-height: 120px;
-            overflow-y: auto;
-            background: #06080a;
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            padding: 0.5rem;
-            font-family: monospace;
-            font-size: 0.75rem;
+            margin: 0;
             color: var(--accent-cyan);
         }
 
-        .status-dot {
-            height: 8px;
-            width: 8px;
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            margin-top: 0;
+            margin-bottom: 16px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        button {
+            background-color: var(--accent-cyan);
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.secondary {
+            background-color: var(--card-border);
+            color: var(--text-main);
+        }
+
+        button.danger {
             background-color: var(--accent-red);
-            border-radius: 50%;
+            color: #fff;
+        }
+
+        .status-badge {
             display: inline-block;
-            margin-right: 6px;
-            transition: background-color 0.3s;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
         }
 
-        .status-dot.connected {
-            background-color: var(--accent-green);
-            box-shadow: 0 0 8px rgba(46, 160, 67, 0.4);
+        .status-badge.connected {
+            background-color: rgba(34, 197, 94, 0.2);
+            color: var(--accent-green);
         }
 
-        .connection-status {
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stats-row {
             display: flex;
-            align-items: center;
-            font-size: 0.875rem;
-            font-weight: 500;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .stat-box .val {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+
+        .stat-box .label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        textarea, input[type="text"], input[type="number"] {
+            width: 100%;
+            background-color: var(--bg-color);
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            color: var(--text-main);
+            padding: 8px 12px;
+            box-sizing: border-box;
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        th {
+            color: var(--text-muted);
+        }
+
+        .log-container {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- Header -->
-        <header>
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <h1>SmartSit Dashboard</h1>
-                <div class="connection-status">
-                    <span id="statusDot" class="status-dot"></span>
-                    <span id="statusText">Disconnected</span>
-                </div>
-            </div>
-            <button id="connectBtn" class="btn btn-primary" onclick="toggleConnect()">Connect Device</button>
-        </header>
-
-        <!-- Metrics Overview -->
-        <div class="card">
-            <div class="card-title">Activity Overview</div>
-            <div class="stats-grid">
-                <div class="stat-box">
-                    <label>Compliance</label>
-                    <div id="statCompliance" class="stat-value">0%</div>
-                </div>
-                <div class="stat-box">
-                    <label>Acknowledged</label>
-                    <div id="statAcc" class="stat-value">0</div>
-                </div>
-                <div class="stat-box">
-                    <label>Ignored</label>
-                    <div id="statIgn" class="stat-value">0</div>
-                </div>
-            </div>
+<div class="container">
+    <header>
+        <div>
+            <h1>SmartSit Control Hub</h1>
         </div>
-
-        <!-- Configuration Panel -->
-        <div class="card">
-            <div class="card-title">Device Configuration</div>
-            <div class="form-group">
-                <label>Tasks (JSON Array format)</label>
-                <textarea id="tasksInput">["WALK 2M", "DRINK WATER", "15 SQUATS", "STRETCH", "EYE EXERCISE"]</textarea>
-            </div>
-            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="form-group">
-                    <label>First Interval (m)</label>
-                    <input type="number" id="firstIntervalInput" value="5">
-                </div>
-                <div class="form-group">
-                    <label>Min Interval (m)</label>
-                    <input type="number" id="minIntervalInput" value="10">
-                </div>
-                <div class="form-group">
-                    <label>Max Interval (m)</label>
-                    <input type="number" id="maxIntervalInput" value="30">
-                </div>
-            </div>
-            <div class="action-row">
-                <button class="btn btn-primary" onclick="saveConfig()">Save Config</button>
-                <button class="btn" onclick="fetchConfig()">Fetch Config</button>
-            </div>
+        <div>
+            <span id="bleStatus" class="status-badge">DISCONNECTED</span>
+            <button id="connectBtn" onclick="toggleConnection()">Connect BLE</button>
         </div>
+    </header>
 
-        <!-- Logs Panel -->
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div class="card-title" style="margin:0;">Activity Logs</div>
-                <button class="btn" onclick="fetchLogs()">Fetch Logs</button>
-            </div>
-            <div id="logsContainer" class="logs-container">
-                <div class="log-item" style="color: var(--text-muted);">No logs loaded yet. Connect and fetch to view.</div>
-            </div>
-        </div>
-
-        <!-- Live BLE Raw Stream Monitor -->
-        <div class="card" style="padding: 1rem;">
-            <div class="card-title" style="margin-bottom: 0.5rem;">Live BLE Stream Debug</div>
-            <div id="debugConsole" class="debug-console">Waiting for connection...</div>
+    <!-- Quick Actions -->
+    <div class="card">
+        <h2>Quick Commands</h2>
+        <div class="action-bar">
+            <button onclick="sendSyncTime()">Sync Time</button>
+            <button class="secondary" onclick="sendGetCfg()">Fetch Config</button>
+            <button class="secondary" onclick="sendGetLogs()">Fetch Logs & Stats</button>
         </div>
     </div>
 
-    <script>
-        const NUS_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-        const NUS_RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
-        const NUS_TX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+    <!-- Stats & Overview -->
+    <div class="card">
+        <h2>Live Overview</h2>
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="val" id="statAcc">0</div>
+                <div class="label">Accepted Tasks</div>
+            </div>
+            <div class="stat-box">
+                <div class="val" id="statIgn" style="color: var(--accent-orange);">0</div>
+                <div class="label">Ignored Tasks</div>
+            </div>
+            <div class="stat-box">
+                <div class="val" id="statFocus" style="color: var(--accent-cyan);">0m</div>
+                <div class="label">Focus Time</div>
+            </div>
+        </div>
+    </div>
 
-        let bleDevice = null;
-        let bleCharacteristicRX = null;
-        let bleCharacteristicTX = null;
-        let rxBuffer = "";
+    <!-- Configuration Editor -->
+    <div class="card">
+        <h2>Device Configuration</h2>
+        <label for="cfgJson">Config JSON:</label>
+        <textarea id="cfgJson"></textarea>
+        <button onclick="sendSaveCfg()">Save Configuration</button>
+    </div>
+
+    <!-- Activity Log History -->
+    <div class="card">
+        <h2>Activity History</h2>
+        <div class="log-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Type</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody">
+                    <tr><td colspan="3" style="color: var(--text-muted); text-align: center;">No logs loaded yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Nordic UART Service UUIDs
+    const NUS_SERVICE_UUID  = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const NUS_TX_CHAR_UUID  = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Notify (Device -> Web)
+    const NUS_RX_CHAR_UUID  = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Write (Web -> Device)
+
+    let bluetoothDevice = null;
+    let txCharacteristic = null;
+    let rxCharacteristic = null;
+    let rxBuffer = "";
+
+    const statusBadge = document.getElementById('bleStatus');
+    const connectBtn = document.getElementById('connectBtn');
+    const cfgJsonArea = document.getElementById('cfgJson');
+    const logTableBody = document.getElementById('logTableBody');
+
+    async function toggleConnection() {
+        if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
+            await connectBLE();
+        } else {
+            disconnectBLE();
+        }
+    }
+
+    async function connectBLE() {
+        try {
+            statusBadge.textContent = "CONNECTING...";
+            
+            bluetoothDevice = await navigator.bluetooth.requestDevice({
+                filters: [{ name: "SmartSit" }],
+                optionalServices: [NUS_SERVICE_UUID]
+            });
+
+            bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+            const server = await bluetoothDevice.gatt.connect();
+            const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+
+            txCharacteristic = await service.getCharacteristic(NUS_TX_CHAR_UUID);
+            rxCharacteristic = await service.getCharacteristic(NUS_RX_CHAR_UUID);
+
+            await txCharacteristic.startNotifications();
+            txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+
+            statusBadge.textContent = "CONNECTED";
+            statusBadge.classList.add('connected');
+            connectBtn.textContent = "Disconnect";
+
+            // Automatically fetch config and logs on connect
+            setTimeout(() => {
+                sendGetCfg();
+                sendGetLogs();
+            }, 500);
+
+        } catch (error) {
+            console.error("Connection failed:", error);
+            statusBadge.textContent = "DISCONNECTED";
+            statusBadge.classList.remove('connected');
+        }
+    }
+
+    function disconnectBLE() {
+        if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+            bluetoothDevice.gatt.disconnect();
+        }
+        onDisconnected();
+    }
+
+    function onDisconnected() {
+        statusBadge.textContent = "DISCONNECTED";
+        statusBadge.classList.remove('connected');
+        connectBtn.textContent = "Connect BLE";
+        bluetoothDevice = null;
+        txCharacteristic = null;
+        rxCharacteristic = null;
+    }
+
+    // Handle incoming notification data chunks
+    function handleNotifications(event) {
+        const value = event.target.value;
+        const decoder = new TextDecoder('utf-8');
+        const chunk = decoder.decode(value);
         
-        let commandQueue = [];
-        let isSending = false;
+        rxBuffer += chunk;
 
-        function logDebug(text) {
-            const consoleEl = document.getElementById('debugConsole');
-            consoleEl.innerHTML += `<div>> ${text}</div>`;
-            consoleEl.scrollTop = consoleEl.scrollHeight;
-            console.log(text);
+        // Process newline-delimited complete JSON messages
+        while (rxBuffer.includes('\n')) {
+            const lineIdx = rxBuffer.indexOf('\n');
+            const line = rxBuffer.substring(0, lineIdx).trim();
+            rxBuffer = rxBuffer.substring(lineIdx + 1);
+
+            if (line) {
+                try {
+                    const parsed = JSON.parse(line);
+                    handleDeviceMessage(parsed);
+                } catch (e) {
+                    console.error("Malformed JSON received:", line);
+                }
+            }
+        }
+    }
+
+    // Handle parsed incoming JSON payloads from ESP32
+    function handleDeviceMessage(msg) {
+        console.log("<- Received from ESP32:", msg);
+        
+        if (msg.type === "CFG" && msg.data) {
+            cfgJsonArea.value = JSON.stringify(msg.data, null, 4);
+        } else if (msg.type === "LOGS" && msg.data) {
+            updateUIStatsAndLogs(msg.data);
+        } else if (msg.type === "ACK") {
+            alert("Command acknowledged successfully!");
+        }
+    }
+
+    // Send payload split into safe chunks or with trailing newline
+    async function sendCommand(obj) {
+        if (!rxCharacteristic) {
+            alert("Not connected to device!");
+            return;
         }
 
-        async function toggleConnect() {
-            if (bleDevice && bleDevice.gatt.connected) {
-                bleDevice.gatt.disconnect();
-                onDisconnected();
+        const payload = JSON.stringify(obj) + "\n";
+        const encoder = new TextEncoder();
+        const data = encoder.encode(payload);
+
+        // Write in chunks to respect BLE MTU limits if payload is large
+        const CHUNK_SIZE = 20;
+        for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+            const chunk = data.slice(i, i + CHUNK_SIZE);
+            await rxCharacteristic.writeValueWithoutResponse(chunk);
+            await new Promise(r => setTimeout(r, 20)); // Small pacing delay
+        }
+        console.log("-> Sent:", obj);
+    }
+
+    // Command Actions
+    function sendSyncTime() {
+        const now = new Date();
+        const timeArray = [
+            now.getFullYear(),
+            now.getMonth() + 1,
+            now.getDate(),
+            now.getHours(),
+            now.getMinutes(),
+            now.getSeconds()
+        ];
+        sendCommand({ c: "SYNC", t: timeArray });
+    }
+
+    function sendGetCfg() {
+        sendCommand({ c: "CFG" });
+    }
+
+    function sendGetLogs() {
+        sendCommand({ c: "LOGS" });
+    }
+
+    function sendSaveCfg() {
+        try {
+            const parsedCfg = JSON.parse(cfgJsonArea.value);
+            sendCommand({ c: "SCFG", d: parsedCfg });
+        } catch (e) {
+            alert("Invalid JSON format in configuration text area.");
+        }
+    }
+
+    function updateUIStatsAndLogs(data) {
+        // Update stats
+        if (data.stats) {
+            document.getElementById('statAcc').textContent = data.stats.acc || 0;
+            document.getElementById('statIgn').textContent = data.stats.ign || 0;
+            document.getElementById('statFocus').textContent = (data.stats.focus_m || 0) + "m";
+        }
+
+        // Update logs table
+        if (data.logs && Array.isArray(data.logs)) {
+            logTableBody.innerHTML = "";
+            if (data.logs.length === 0) {
+                logTableBody.innerHTML = `<tr><td colspan="3" style="color: var(--text-muted); text-align: center;">No logs found.</td></tr>`;
                 return;
             }
 
-            try {
-                logDebug("Requesting Bluetooth Device...");
-                bleDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: [NUS_SERVICE_UUID] }],
-                    optionalServices: [NUS_SERVICE_UUID]
-                });
-
-                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-
-                logDebug("Connecting to GATT Server...");
-                const server = await bleDevice.gatt.connect();
-
-                logDebug("Getting NUS Service...");
-                const service = await server.getPrimaryService(NUS_SERVICE_UUID);
-
-                logDebug("Getting Characteristics...");
-                bleCharacteristicRX = await service.getCharacteristic(NUS_RX_UUID);
-                bleCharacteristicTX = await service.getCharacteristic(NUS_TX_UUID);
-
-                await bleCharacteristicTX.startNotifications();
-                bleCharacteristicTX.addEventListener('characteristicvaluechanged', handleNotification);
-
-                onConnected();
+            // Display newest first
+            const reversedLogs = [...data.logs].reverse();
+            for (const log of reversedLogs) {
+                const tr = document.createElement('tr');
                 
-                // Queue startup commands sequentially with breathing room
-                await syncTime();
-                await fetchConfig();
-                await fetchLogs();
+                const tdTs = document.createElement('td');
+                tdTs.textContent = log.ts || "-";
+                
+                const tdType = document.createElement('td');
+                tdType.textContent = log.type || "-";
+                tdType.style.fontWeight = "bold";
+                if (log.type === "TASK") tdType.style.color = log.out === "ACC" ? "var(--accent-green)" : "var(--accent-orange)";
+                if (log.type === "FOCUS") tdType.style.color = "var(--accent-cyan)";
 
-            } catch (error) {
-                logDebug("Connection error: " + error.message);
-                alert("Connection failed: " + error.message);
-            }
-        }
-
-        function onConnected() {
-            document.getElementById('statusDot').classList.add('connected');
-            document.getElementById('statusText').innerText = "Connected";
-            document.getElementById('connectBtn').innerText = "Disconnect";
-            document.getElementById('connectBtn').style.background = "var(--accent-red)";
-            document.getElementById('connectBtn').style.color = "#ffffff";
-            logDebug("Connected successfully!");
-        }
-
-        function onDisconnected() {
-            document.getElementById('statusDot').classList.remove('connected');
-            document.getElementById('statusText').innerText = "Disconnected";
-            document.getElementById('connectBtn').innerText = "Connect Device";
-            document.getElementById('connectBtn').style.background = "var(--accent-cyan)";
-            document.getElementById('connectBtn').style.color = "#000000";
-            bleDevice = null;
-            bleCharacteristicRX = null;
-            bleCharacteristicTX = null;
-            commandQueue = [];
-            isSending = false;
-            logDebug("Device disconnected.");
-        }
-
-        function handleNotification(event) {
-            const value = event.target.value;
-            const chunk = new TextDecoder().decode(value);
-            rxBuffer += chunk;
-
-            while (rxBuffer.includes('\n')) {
-                const lineEnd = rxBuffer.indexOf('\n');
-                const completeMessage = rxBuffer.slice(0, lineEnd).trim();
-                rxBuffer = rxBuffer.slice(lineEnd + 1);
-
-                if (completeMessage) {
-                    logDebug("RX Line: " + completeMessage);
-                    try {
-                        const parsed = JSON.parse(completeMessage);
-                        handleDeviceMessage(parsed);
-                    } catch (err) {
-                        logDebug("JSON Parse Error: " + err.message);
+                const tdDetails = document.createElement('td');
+                let detailsStr = "";
+                for (const [k, v] of Object.entries(log)) {
+                    if (k !== "ts" && k !== "type") {
+                        detailsStr += `${k}: ${v}  `;
                     }
                 }
+                tdDetails.textContent = detailsStr || "-";
+
+                tr.appendChild(tdTs);
+                tr.appendChild(tdType);
+                tr.appendChild(tdDetails);
+                logTableBody.appendChild(tr);
             }
         }
+    }
+</script>
 
-        // Universal handler supporting both wrapped ({type, data}) and direct JSON formats
-        function handleDeviceMessage(msg) {
-            // Check for Config Data
-            if (msg.type === "CFG" && msg.data) {
-                populateConfigUI(msg.data);
-            } else if (msg.tasks !== undefined || msg.first_interval !== undefined) {
-                populateConfigUI(msg);
-            }
-            
-            // Check for Log Data
-            if (msg.type === "LOGS" && msg.data) {
-                populateLogsUI(msg.data);
-            } else if (msg.logs !== undefined || msg.stats !== undefined) {
-                populateLogsUI(msg);
-            }
-            
-            if (msg.type === "ACK" || msg.status === "OK") {
-                logDebug("Acknowledged by device.");
-            }
-        }
-
-        async function sendCommand(cmdObject) {
-            return new Promise((resolve, reject) => {
-                commandQueue.push({ cmdObject, resolve, reject });
-                processQueue();
-            });
-        }
-
-        async function processQueue() {
-            if (isSending || commandQueue.length === 0 || !bleCharacteristicRX) return;
-            isSending = true;
-            const { cmdObject, resolve, reject } = commandQueue.shift();
-
-            const payload = JSON.stringify(cmdObject) + "\n";
-            const encoded = new TextEncoder().encode(payload);
-
-            try {
-                if (bleCharacteristicRX.properties.writeWithoutResponse) {
-                    await bleCharacteristicRX.writeValueWithoutResponse(encoded);
-                } else {
-                    await bleCharacteristicRX.writeValueWithResponse(encoded);
-                }
-                logDebug("TX: " + JSON.stringify(cmdObject));
-                setTimeout(() => {
-                    isSending = false;
-                    resolve();
-                    processQueue();
-                }, 150);
-            } catch (error) {
-                logDebug("TX Error: " + error.message);
-                isSending = false;
-                reject(error);
-                processQueue();
-            }
-        }
-
-        async function syncTime() {
-            const now = new Date();
-            const timeArr = [
-                now.getFullYear(),
-                now.getMonth() + 1,
-                now.getDate(),
-                now.getHours(),
-                now.getMinutes(),
-                now.getSeconds()
-            ];
-            await sendCommand({ cmd: "SYNC_TIME", time: timeArr });
-        }
-
-        async function fetchConfig() {
-            await sendCommand({ cmd: "GET_CFG" });
-        }
-
-        async function saveConfig() {
-            try {
-                const tasks = JSON.parse(document.getElementById('tasksInput').value);
-                const first_interval = parseInt(document.getElementById('firstIntervalInput').value);
-                const min_interval = parseInt(document.getElementById('minIntervalInput').value);
-                const max_interval = parseInt(document.getElementById('maxIntervalInput').value);
-
-                const cfgData = { tasks, first_interval, min_interval, max_interval };
-                await sendCommand({ cmd: "SET_CFG", data: cfgData });
-                alert("Configuration saved successfully!");
-            } catch (e) {
-                alert("Invalid Tasks JSON format. Please verify.");
-            }
-        }
-
-        async function fetchLogs() {
-            await sendCommand({ cmd: "GET_LOGS" });
-        }
-
-        function populateConfigUI(cfg) {
-            logDebug("Populating Config UI...");
-            if (cfg.tasks) {
-                document.getElementById('tasksInput').value = JSON.stringify(cfg.tasks);
-            }
-            if (cfg.first_interval !== undefined) {
-                document.getElementById('firstIntervalInput').value = cfg.first_interval;
-            }
-            if (cfg.min_interval !== undefined) {
-                document.getElementById('minIntervalInput').value = cfg.min_interval;
-            }
-            if (cfg.max_interval !== undefined) {
-                document.getElementById('maxIntervalInput').value = cfg.max_interval;
-            }
-        }
-
-        function populateLogsUI(data) {
-            logDebug("Populating Logs UI...");
-            const container = document.getElementById('logsContainer');
-            container.innerHTML = "";
-
-            const stats = data.stats || data;
-            if (stats && (stats.acc !== undefined || stats.ign !== undefined)) {
-                const acc = stats.acc || 0;
-                const ign = stats.ign || 0;
-                const total = acc + ign;
-                const comp = total > 0 ? Math.round((acc / total) * 100) : 0;
-
-                document.getElementById('statCompliance').innerText = comp + "%";
-                document.getElementById('statAcc').innerText = acc;
-                document.getElementById('statIgn').innerText = ign;
-            }
-
-            const logsList = data.logs || (Array.isArray(data) ? data : []);
-            if (logsList.length > 0) {
-                logsList.slice().reverse().forEach(log => {
-                    const div = document.createElement('div');
-                    div.className = 'log-item';
-                    let detailStr = "";
-                    if (log.task) detailStr += ` | Task: ${log.task} (${log.out || log.outcome || 'N/A'})`;
-                    if (log.duration) detailStr += ` | Duration: ${Math.round(log.duration/60)}m`;
-                    div.innerText = `[${log.ts || log.timestamp || '00:00'}] ${log.type || log.event || 'EVENT'}${detailStr}`;
-                    container.appendChild(div);
-                });
-            } else {
-                container.innerHTML = `<div class="log-item" style="color: var(--text-muted);">No log entries recorded yet.</div>`;
-            }
-        }
-    </script>
 </body>
 </html>
