@@ -111,18 +111,6 @@
             color: var(--accent-green);
         }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        @media (max-width: 600px) {
-            .grid-2 {
-                grid-template-columns: 1fr;
-            }
-        }
-
         .stats-row {
             display: flex;
             justify-content: space-around;
@@ -141,7 +129,7 @@
             margin-top: 4px;
         }
 
-        textarea, input[type="text"], input[type="number"] {
+        textarea {
             width: 100%;
             background-color: var(--bg-color);
             border: 1px solid var(--card-border);
@@ -151,9 +139,6 @@
             box-sizing: border-box;
             font-family: monospace;
             margin-bottom: 10px;
-        }
-
-        textarea {
             height: 120px;
             resize: vertical;
         }
@@ -185,6 +170,16 @@
             flex-wrap: wrap;
             margin-bottom: 16px;
         }
+
+        .notice {
+            background-color: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -199,6 +194,10 @@
             <button id="connectBtn" onclick="toggleConnection()">Connect BLE</button>
         </div>
     </header>
+
+    <div class="notice">
+        <strong>Tip:</strong> Make sure you are running this page via **localhost** (e.g., using VS Code Live Server) rather than opening the file directly via `file:///`, as browsers block Web Bluetooth on local file paths.
+    </div>
 
     <!-- Quick Actions -->
     <div class="card">
@@ -258,10 +257,9 @@
 </div>
 
 <script>
-    // Nordic UART Service UUIDs
     const NUS_SERVICE_UUID  = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-    const NUS_TX_CHAR_UUID  = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Notify (Device -> Web)
-    const NUS_RX_CHAR_UUID  = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Write (Web -> Device)
+    const NUS_TX_CHAR_UUID  = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; 
+    const NUS_RX_CHAR_UUID  = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; 
 
     let bluetoothDevice = null;
     let txCharacteristic = null;
@@ -285,8 +283,9 @@
         try {
             statusBadge.textContent = "CONNECTING...";
             
+            // Using acceptAllDevices to prevent filtering mismatches on Windows/Linux Bluetooth stacks
             bluetoothDevice = await navigator.bluetooth.requestDevice({
-                filters: [{ name: "SmartSit" }],
+                acceptAllDevices: true,
                 optionalServices: [NUS_SERVICE_UUID]
             });
 
@@ -305,7 +304,6 @@
             statusBadge.classList.add('connected');
             connectBtn.textContent = "Disconnect";
 
-            // Automatically fetch config and logs on connect
             setTimeout(() => {
                 sendGetCfg();
                 sendGetLogs();
@@ -334,7 +332,6 @@
         rxCharacteristic = null;
     }
 
-    // Handle incoming notification data chunks
     function handleNotifications(event) {
         const value = event.target.value;
         const decoder = new TextDecoder('utf-8');
@@ -342,7 +339,6 @@
         
         rxBuffer += chunk;
 
-        // Process newline-delimited complete JSON messages
         while (rxBuffer.includes('\n')) {
             const lineIdx = rxBuffer.indexOf('\n');
             const line = rxBuffer.substring(0, lineIdx).trim();
@@ -359,7 +355,6 @@
         }
     }
 
-    // Handle parsed incoming JSON payloads from ESP32
     function handleDeviceMessage(msg) {
         console.log("<- Received from ESP32:", msg);
         
@@ -372,7 +367,6 @@
         }
     }
 
-    // Send payload split into safe chunks or with trailing newline
     async function sendCommand(obj) {
         if (!rxCharacteristic) {
             alert("Not connected to device!");
@@ -383,17 +377,15 @@
         const encoder = new TextEncoder();
         const data = encoder.encode(payload);
 
-        // Write in chunks to respect BLE MTU limits if payload is large
         const CHUNK_SIZE = 20;
         for (let i = 0; i < data.length; i += CHUNK_SIZE) {
             const chunk = data.slice(i, i + CHUNK_SIZE);
             await rxCharacteristic.writeValueWithoutResponse(chunk);
-            await new Promise(r => setTimeout(r, 20)); // Small pacing delay
+            await new Promise(r => setTimeout(r, 20)); 
         }
         console.log("-> Sent:", obj);
     }
 
-    // Command Actions
     function sendSyncTime() {
         const now = new Date();
         const timeArray = [
@@ -425,14 +417,12 @@
     }
 
     function updateUIStatsAndLogs(data) {
-        // Update stats
         if (data.stats) {
             document.getElementById('statAcc').textContent = data.stats.acc || 0;
             document.getElementById('statIgn').textContent = data.stats.ign || 0;
             document.getElementById('statFocus').textContent = (data.stats.focus_m || 0) + "m";
         }
 
-        // Update logs table
         if (data.logs && Array.isArray(data.logs)) {
             logTableBody.innerHTML = "";
             if (data.logs.length === 0) {
@@ -440,7 +430,6 @@
                 return;
             }
 
-            // Display newest first
             const reversedLogs = [...data.logs].reverse();
             for (const log of reversedLogs) {
                 const tr = document.createElement('tr');
