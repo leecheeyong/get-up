@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartSit Tracker</title>
+    <style>
+        body { font-family: monospace; background: #121212; color: #00ffcc; padding: 20px; }
+        button { background: #333; color: #fff; border: 1px solid #00ffcc; padding: 10px; cursor: pointer; margin: 5px; }
+        button:hover { background: #00ffcc; color: #000; }
+        pre { background: #1e1e1e; padding: 15px; border: 1px solid #333; height: 300px; overflow-y: scroll; }
+    </style>
+</head>
+<body>
+
+    <h2>SmartSit Tracker Bluetooth Terminal</h2>
+    <button id="connectBtn">Connect to Tracker</button>
+    <button id="logsBtn" disabled>Get Logs</button>
+    <button id="cfgBtn" disabled>Get Config</button>
+    
+    <h3>Console Output:</h3>
+    <pre id="output"></pre>
+
+    <script>
+        const NUS_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+        const NUS_RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Write to ESP32
+        const NUS_TX_UUID      = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Read from ESP32
+
+        let bluetoothDevice = null;
+        let rxCharacteristic = null;
+        let txCharacteristic = null;
+
+        const connectBtn = document.getElementById('connectBtn');
+        const logsBtn = document.getElementById('logsBtn');
+        const cfgBtn = document.getElementById('cfgBtn');
+        const output = document.getElementById('output');
+
+        function log(text) {
+            output.textContent += text + "\n";
+            output.scrollTop = output.scrollHeight;
+        }
+
+        connectBtn.addEventListener('click', async () => {
+            try {
+                log("Requesting Bluetooth Device...");
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'SmartSit-Tracker' }],
+                    optionalServices: [NUS_SERVICE_UUID]
+                });
+
+                log("Connecting to GATT Server...");
+                const server = await bluetoothDevice.gatt.connect();
+
+                log("Getting NUS Service...");
+                const service = await server.getPrimaryService(NUS_SERVICE_UUID);
+
+                log("Getting Characteristics...");
+                rxCharacteristic = await service.getCharacteristic(NUS_RX_UUID);
+                txCharacteristic = await service.getCharacteristic(NUS_TX_UUID);
+
+                await txCharacteristic.startNotifications();
+                txCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    let decoder = new TextDecoder('utf-8');
+                    let value = decoder.decode(event.target.value);
+                    log("RX: " + value);
+                });
+
+                log("Connected successfully!");
+                connectBtn.disabled = true;
+                logsBtn.disabled = false;
+                cfgBtn.disabled = false;
+
+            } catch (error) {
+                log("Connection failed: " + error);
+            }
+        });
+
+        async function sendCommand(obj) {
+            if (!rxCharacteristic) return;
+            let encoder = new TextEncoder();
+            let data = encoder.encode(JSON.stringify(obj) + "\n");
+            await rxCharacteristic.writeValue(data);
+            log("TX: " + JSON.stringify(obj));
+        }
+
+        logsBtn.addEventListener('click', () => {
+            sendCommand({ cmd: "GET_LOGS" });
+        });
+
+        cfgBtn.addEventListener('click', () => {
+            sendCommand({ cmd: "GET_CFG" });
+        });
+    </script>
+</body>
+</html>
